@@ -9,15 +9,14 @@
 // ------------------------------------------------------------------------------
 namespace Madd0.AzureStorageDriver
 {
-    using System;
-    using System.Collections;
     using System.Collections.Generic;
+    using System;
     
     /// <summary>
     /// Class to produce the template output
     /// </summary>
     
-    #line 1 "C:\Projects\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
+    #line 1 "C:\Users\altremblay\Work\dev\etc\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "16.0.0.0")]
     public partial class DataContextTemplate : DataContextTemplateBase
     {
@@ -29,43 +28,28 @@ namespace Madd0.AzureStorageDriver
         {
             this.Write("\r\nnamespace ");
             
-            #line 6 "C:\Projects\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
+            #line 4 "C:\Users\altremblay\Work\dev\etc\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(this.Namespace));
             
             #line default
             #line hidden
-            this.Write(@"
-{
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Linq;
-    using Madd0.UserQuery;
-#if NETCORE
-    using Microsoft.Azure.Cosmos.Table;
-#else
-    using Microsoft.Azure.CosmosDB.Table;
-#endif
-
-    public class ");
+            this.Write("\r\n{\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collections.Generic;\r\n    using System.Linq;\r\n    using Madd0.UserQuery;\r\n    using Azure;\r\n    using Azure.Core;\r\n    using Azure.Data.Tables;\r\n\r\n    public class ");
             
-            #line 19 "C:\Projects\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
+            #line 15 "C:\Users\altremblay\Work\dev\etc\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(this.TypeName));
             
             #line default
             #line hidden
             this.Write("\r\n    {\r\n        public ");
             
-            #line 21 "C:\Projects\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
+            #line 17 "C:\Users\altremblay\Work\dev\etc\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(this.TypeName));
             
             #line default
             #line hidden
-            this.Write("(CloudTableClient  client)\r\n        {\r\n            this.TableClient = client;\r\n  " +
-                    "      }\r\n\r\n        public CloudTableClient TableClient\r\n        {\r\n            g" +
-                    "et;\r\n            private set;\r\n        }\r\n\r\n");
+            this.Write("(TableServiceClient  client)\r\n        {\r\n            this.TableClient = client;\r\n        }\r\n\r\n        public TableServiceClient TableClient\r\n        {\r\n            get;\r\n            private set;\r\n        }\r\n\r\n");
             
-            #line 32 "C:\Projects\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
+            #line 28 "C:\Users\altremblay\Work\dev\etc\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
 
 foreach (var table in this.Tables)
 {
@@ -73,49 +57,46 @@ foreach (var table in this.Tables)
             
             #line default
             #line hidden
-            this.Write("        public ExtendedTableQuery<");
+            this.Write("        public TableQuery<");
             
-            #line 36 "C:\Projects\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
+            #line 32 "C:\Users\altremblay\Work\dev\etc\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(table.Name));
             
             #line default
             #line hidden
             this.Write("Entity> ");
             
-            #line 36 "C:\Projects\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
+            #line 32 "C:\Users\altremblay\Work\dev\etc\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(table.Name));
             
             #line default
             #line hidden
-            this.Write("\r\n        {\r\n            get\r\n            {\r\n                return new ExtendedT" +
-                    "ableQuery<");
+            this.Write("\r\n        {\r\n            get\r\n            {\r\n                return new TableQuery<");
             
-            #line 40 "C:\Projects\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
+            #line 36 "C:\Users\altremblay\Work\dev\etc\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(table.Name));
             
             #line default
             #line hidden
-            this.Write("Entity>(this.TableClient.GetTableReference(\"");
+            this.Write("Entity>(this.TableClient.GetTableClient(\"");
             
-            #line 40 "C:\Projects\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
+            #line 36 "C:\Users\altremblay\Work\dev\etc\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(table.Name));
             
             #line default
             #line hidden
             this.Write("\"));\r\n            }\r\n        }\r\n");
             
-            #line 43 "C:\Projects\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
+            #line 39 "C:\Users\altremblay\Work\dev\etc\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
 
 }
 
             
             #line default
             #line hidden
-            this.Write("\r\n        public TableQuery<TElement> MakeTableQuery<TElement>()\r\n            whe" +
-                    "re TElement : ITableEntity\r\n        {\r\n            return new TableQuery<TElemen" +
-                    "t>();\r\n        }\r\n    }\r\n\r\n");
+            this.Write("\r\n    }\r\n\r\n");
             
-            #line 54 "C:\Projects\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
+            #line 45 "C:\Users\altremblay\Work\dev\etc\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
 
 foreach (var table in this.Tables)
 {
@@ -125,42 +106,39 @@ foreach (var table in this.Tables)
             #line hidden
             this.Write("    public class ");
             
-            #line 58 "C:\Projects\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
+            #line 49 "C:\Users\altremblay\Work\dev\etc\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(table.Name));
             
             #line default
             #line hidden
-            this.Write("Entity : TableEntity\r\n    {\r\n    ");
+            this.Write("Entity\r\n    {\r\n    ");
             
-            #line 60 "C:\Projects\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
+            #line 51 "C:\Users\altremblay\Work\dev\etc\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
 
     foreach (var column in table.Columns)
     {
-        if (!this.DefaultProperties.Contains(column.Name))
-        {
     
             
             #line default
             #line hidden
             this.Write("        public ");
             
-            #line 66 "C:\Projects\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
+            #line 55 "C:\Users\altremblay\Work\dev\etc\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.TypeName));
             
             #line default
             #line hidden
             this.Write(" ");
             
-            #line 66 "C:\Projects\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
+            #line 55 "C:\Users\altremblay\Work\dev\etc\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Name));
             
             #line default
             #line hidden
             this.Write("\r\n        {\r\n            get;\r\n            set;\r\n        }\r\n    ");
             
-            #line 71 "C:\Projects\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
+            #line 60 "C:\Users\altremblay\Work\dev\etc\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
 
-        }
     }
     
             
@@ -168,7 +146,7 @@ foreach (var table in this.Tables)
             #line hidden
             this.Write("    }\r\n");
             
-            #line 76 "C:\Projects\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
+            #line 64 "C:\Users\altremblay\Work\dev\etc\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
 
 }
 
@@ -179,9 +157,7 @@ foreach (var table in this.Tables)
             return this.GenerationEnvironment.ToString();
         }
         
-        #line 81 "C:\Projects\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
-
-private readonly List<string> DefaultProperties = new List<string> { "PartitionKey", "RowKey", "Timestamp", "ETag" };
+        #line 69 "C:\Users\altremblay\Work\dev\etc\AzureStorageDriver\Madd0.AzureStorageDriver\DataContextTemplate.tt"
 
 public string Namespace { get; set; }
 

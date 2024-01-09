@@ -30,12 +30,12 @@ namespace Madd0.AzureStorageDriver
 #else
            optimizationLevel: OptimizationLevel.Release,
 #endif
-           generalDiagnosticOption: ReportDiagnostic.Error
+           generalDiagnosticOption: ReportDiagnostic.Info
        );
 
-        public void Compile(string code, AssemblyName name, IEnumerable<string> assemblyLocations)
+        public void Compile(IConnectionInfo connectionInfo, string code, AssemblyName name, IEnumerable<string> assemblyLocations)
         {
-            var platformAssemblies = DataContextDriver.GetCoreFxReferenceAssemblies();
+            var platformAssemblies = DataContextDriver.GetCoreFxReferenceAssemblies(connectionInfo);
 
             var references = platformAssemblies.Concat(assemblyLocations).Select(l => MetadataReference.CreateFromFile(l));
 

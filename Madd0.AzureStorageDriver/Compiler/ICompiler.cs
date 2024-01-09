@@ -6,6 +6,8 @@
 // <author>Mauricio DIAZ ORLICH</author>
 //-----------------------------------------------------------------------
 
+using LINQPad.Extensibility.DataContext;
+
 namespace Madd0.AzureStorageDriver
 {
     using System.Collections.Generic;
@@ -13,6 +15,6 @@ namespace Madd0.AzureStorageDriver
 
     internal interface ICompiler
     {
-        void Compile(string code, AssemblyName name, IEnumerable<string> assemblyLocations);
+        void Compile(IConnectionInfo connectionInfo, string code, AssemblyName name, IEnumerable<string> assemblyLocations);
     }
 }

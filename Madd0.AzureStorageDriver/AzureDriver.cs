@@ -6,6 +6,9 @@
 // <author>Mauricio DIAZ ORLICH</author>
 //-----------------------------------------------------------------------
 
+using Azure.Data.Tables;
+using System.Diagnostics;
+
 namespace Madd0.AzureStorageDriver
 {
     using System;
@@ -13,11 +16,6 @@ namespace Madd0.AzureStorageDriver
     using System.Reflection;
     using LINQPad.Extensibility.DataContext;
     using Madd0.AzureStorageDriver.Properties;
-#if NETCORE
-    using Microsoft.Azure.Cosmos.Table;
-#else
-    using Microsoft.Azure.CosmosDB.Table;
-#endif
 
     /// <summary>
     /// LINQPad dynamic driver that lets users connect to an Azure Table Storage account.
@@ -59,15 +57,13 @@ namespace Madd0.AzureStorageDriver
         public override string GetConnectionDescription(IConnectionInfo cxInfo)
         {
             var accountProperties = new StorageAccountProperties(cxInfo);
-            
             var description = accountProperties.DisplayName;
-
-            if (accountProperties.AzureEnvironment != AzureEnvironment.AzureGlobalCloud)
-            {
-                description += $" ({accountProperties.AzureEnvironment.Name})";
-            }
-
             return description;
+        }
+
+        public override string GetMinimumSupportedFrameworkVersion(IConnectionInfo cxInfo)
+        {
+            return "6.0";
         }
 
         /// <summary>
@@ -82,7 +78,6 @@ namespace Madd0.AzureStorageDriver
             {
                 _ = new StorageAccountProperties(cxInfo)
                 {
-                    UseHttps = true,
                     NumberOfRows = 100
                 };
             }
@@ -105,23 +100,15 @@ namespace Madd0.AzureStorageDriver
             return account1.Equals(account2);
         }
 
-#if NETCORE
         public override IEnumerable<string> GetAssembliesToAdd(IConnectionInfo cxInfo)
         {
-            return new string[]
+            return new[]
                 {
-                    "Microsoft.Azure.Cosmos.Table.dll"
+                    "Azure.Core.dll",
+                    "Azure.Data.Tables.dll"
                 };
         }
-#else
-        public override IEnumerable<string> GetAssembliesToAdd(IConnectionInfo cxInfo)
-        {
-            return new string[]
-                {
-                    "Microsoft.Azure.CosmosDB.Table.dll"
-                };
-        }
-#endif
+
         /// <summary>
         /// Gets the schema and builds the assembly that contains the typed data context.
         /// </summary>
@@ -149,11 +136,9 @@ namespace Madd0.AzureStorageDriver
         {
             var properties = new StorageAccountProperties(cxInfo);
 
-            var storageAccount = properties.GetStorageAccount();
-
             return new object[]
             {
-                storageAccount.CreateCloudTableClient()
+                properties.GetStorageAccount()
             };
         }
 
@@ -167,7 +152,7 @@ namespace Madd0.AzureStorageDriver
         {
             return new[]
             {
-                new ParameterDescriptor("client", typeof(CloudTableClient).FullName)
+                new ParameterDescriptor("client", typeof(TableServiceClient).FullName)
             };
         }
     }

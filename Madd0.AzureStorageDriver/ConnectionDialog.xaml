@@ -10,27 +10,17 @@
         SizeToContent="Height"
         WindowStartupLocation="CenterScreen"
         mc:Ignorable="d">
-    <Window.Resources>
-        <Style TargetType="TextBox">
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding IsChecked, ElementName=UseDevelopmentStorage}" Value="True">
-                    <Setter Property="IsEnabled" Value="False" />
-                    <Setter Property="Text" Value="" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-    </Window.Resources>
 
     <StackPanel Margin="7">
         <Label Padding="0 0 0 3" Target="{Binding ElementName=AccountName}">Storage account _name:</Label>
 
         <DockPanel>
-            <CheckBox x:Name="UseDevelopmentStorage"
+            <CheckBox x:Name="UseAzureCredential"
                       Margin="30 0 0 5"
                       VerticalAlignment="Center"
-                      Content="Use _development storage"
+                      Content="Use _Azure Credential"
                       DockPanel.Dock="Right"
-                      IsChecked="{Binding UseLocalStorage}"
+                      IsChecked="{Binding UseTokenCredential}"
                       TabIndex="2" />
             <TextBox x:Name="AccountName"
                      Margin="0 0 0 5"
@@ -38,7 +28,7 @@
                      Text="{Binding AccountName}" />
         </DockPanel>
 
-        <Label Padding="0 0 0 3" Target="{Binding ElementName=AccountKey}">Storage account _key:</Label>
+        <Label Padding="0 0 0 3" Target="{Binding ElementName=AccountKey}">Connection string or Storage Uri:</Label>
         <TextBox x:Name="AccountKey"
                  TabIndex="3"
                  Text="{Binding AccountKey}" />
@@ -49,15 +39,6 @@
                   TabIndex="5" />
 
         <Expander Header="_Advanced">
-            <Expander.Style>
-                <Style TargetType="Expander">
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsChecked, ElementName=UseDevelopmentStorage}" Value="True">
-                            <Setter Property="IsEnabled" Value="False" />
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </Expander.Style>
             <Grid Margin="23 5 0 0">
                 <Grid.RowDefinitions>
                     <RowDefinition />
@@ -70,22 +51,6 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-
-                <Label Padding="0 2" Target="{Binding ElementName=AzureEnvironment}">Azure _environment:</Label>
-
-                <ComboBox x:Name="AzureEnvironment"
-                          Grid.Column="1"
-                          Width="100"
-                          Margin="5 0 5 5"
-                          DisplayMemberPath="Name"
-                          ItemsSource="{Binding Environments}"
-                          SelectedItem="{Binding AzureEnvironment}" />
-
-                <CheckBox Grid.Column="2"
-                          Margin="0 3"
-                          Content="_Use HTTPS"
-                          IsChecked="{Binding UseHttps}"
-                          TabIndex="4" />
 
                 <Label Grid.Row="1"
                        Padding="0 5"
@@ -133,7 +98,7 @@
                          Text="{Binding ModelLoadMaxParallelism}"
                          TextAlignment="Right" />
                 <Grid Grid.Row="2"
-                      Grid.Column="3"
+                      Grid.Column="2"
                       Margin="0 5 0 10"
                       HorizontalAlignment="Left">
                     <Grid.ToolTip>

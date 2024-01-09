@@ -6,19 +6,14 @@
 // <author>Mauricio DIAZ ORLICH</author>
 //-----------------------------------------------------------------------
 
+using Azure.Data.Tables;
+using Azure.Identity;
+using LINQPad.Extensibility.DataContext;
+using System;
+using System.Xml.Linq;
+
 namespace Madd0.AzureStorageDriver
 {
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Xml.Linq;
-    using LINQPad.Extensibility.DataContext;
-    using Madd0.AzureStorageDriver.Properties;
-#if NETCORE
-    using Microsoft.Azure.Cosmos.Table;
-#else
-    using Microsoft.Azure.Storage;
-    using Microsoft.Azure.Storage.Auth;
-#endif
 
     /// <summary>
     /// Wrapper to expose typed properties over ConnectionInfo.DriverData.
@@ -48,6 +43,8 @@ namespace Madd0.AzureStorageDriver
             set { this._connectionInfo.Persist = value; }
         }
 
+        public IConnectionInfo ConnectionInfo => _connectionInfo;
+
         /// <summary>
         /// Gets the display name of the connection.
         /// </summary>
@@ -55,14 +52,7 @@ namespace Madd0.AzureStorageDriver
         {
             get
             {
-                if (this.UseLocalStorage)
-                {
-                    return Resources.LocalStorageDisplayName;
-                }
-                else
-                {
-                    return this.AccountName;
-                }
+                return this.AccountName;
             }
         }
 
@@ -70,38 +60,15 @@ namespace Madd0.AzureStorageDriver
         /// Gets or sets a value indicating whether local storage is being used.
         /// </summary>
         /// <value><c>true</c> if local storage is used; otherwise, <c>false</c>.</value>
-        public bool UseLocalStorage
+        public bool UseTokenCredential
         {
             get
             {
-                return (bool?)this._driverData.Element("UseLocalStorage") ?? false;
+                return (bool?)this._driverData.Element("UseTokenCredential") ?? false;
             }
-
             set
             {
-                this._driverData.SetElementValue("UseLocalStorage", value);
-
-                if (value)
-                {
-                    this.ClearAccountNameAndKey();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether to use HTTPS.
-        /// </summary>
-        /// <value><c>true</c> if HTTPS is used; otherwise, <c>false</c>.</value>
-        public bool UseHttps
-        {
-            get
-            {
-                return (bool?)this._driverData.Element("UseHttps") ?? false;
-            }
-
-            set
-            {
-                this._driverData.SetElementValue("UseHttps", value);
+                this._driverData.SetElementValue("UseTokenCredential", value);
             }
         }
 
@@ -150,7 +117,7 @@ namespace Madd0.AzureStorageDriver
             get
             {
                 return (int?)this._driverData.Element("ModelLoadMaxParallelism") ??
-                  (System.Environment.ProcessorCount * 2);
+                  (Environment.ProcessorCount * 2);
             }
             set
             {
@@ -158,46 +125,43 @@ namespace Madd0.AzureStorageDriver
             }
         }
 
-        public IEnumerable<AzureEnvironment> Environments => AzureEnvironment.KnownEnvironments;
-
-        public AzureEnvironment AzureEnvironment
-        {
-            get
-            {
-                var selected = (string)_driverData.Element("AzureEnvironment");
-
-                if (!string.IsNullOrEmpty(selected))
-                {
-                    return AzureEnvironment.Environments[selected];
-                }
-                else
-                {
-                    return AzureEnvironment.KnownEnvironments.First();
-                }
-            }
-            set
-            {
-                this._driverData.SetElementValue("AzureEnvironment", value.Name);
-            }
-        }
+        // public IEnumerable<AzureEnvironment> Environments => AzureEnvironment.KnownEnvironments;
+        //
+        // public AzureEnvironment AzureEnvironment
+        // {
+        //     get
+        //     {
+        //         var selected = (string)_driverData.Element("AzureEnvironment");
+        //
+        //         if (!string.IsNullOrEmpty(selected))
+        //         {
+        //             return AzureEnvironment.Environments[selected];
+        //         }
+        //         else
+        //         {
+        //             return AzureEnvironment.KnownEnvironments.First();
+        //         }
+        //     }
+        //     set
+        //     {
+        //         this._driverData.SetElementValue("AzureEnvironment", value.Name);
+        //     }
+        // }
 
         /// <summary>
         /// Gets a <see cref="CloudStorageAccount"/> instace for the current connection.
         /// </summary>
         /// <returns>A <see cref="CloudStorageAccount"/> instace configured with the credentials
         /// of the current connection.</returns>
-        public CloudStorageAccount GetStorageAccount()
+        public TableServiceClient GetStorageAccount()
         {
-            if (this.UseLocalStorage)
+            if (this.UseTokenCredential)
             {
-                return CloudStorageAccount.DevelopmentStorageAccount;
+                return new TableServiceClient(new Uri(AccountKey), new AzureCliCredential());
             }
             else
             {
-                return new CloudStorageAccount(
-                    new StorageCredentials(this.AccountName, this.AccountKey),
-                    this.AzureEnvironment.StorageEndpointSuffix,
-                    this.UseHttps);
+                return new TableServiceClient(this.AccountKey);
             }
         }
 
@@ -205,20 +169,20 @@ namespace Madd0.AzureStorageDriver
         /// Clears the account name and key.
         /// </summary>
         /// <remarks>This method is called when local storage is used.</remarks>
-        private void ClearAccountNameAndKey()
-        {
-            var accountName = this._driverData.Element("AccountName");
-            var accountKey = this._driverData.Element("AccountKey");
-
-            if (null != accountName)
-            {
-                accountName.Remove();
-            }
-
-            if (null != accountKey)
-            {
-                accountKey.Remove();
-            }
-        }
+        // private void ClearAccountNameAndKey()
+        // {
+        //     var accountName = this._driverData.Element("AccountName");
+        //     var accountKey = this._driverData.Element("AccountKey");
+        //
+        //     if (null != accountName)
+        //     {
+        //         accountName.Remove();
+        //     }
+        //
+        //     if (null != accountKey)
+        //     {
+        //         accountKey.Remove();
+        //     }
+        // }
     }
 }

@@ -5,25 +5,21 @@
 // </copyright>
 // <author>Mauricio DIAZ ORLICH</author>
 //-----------------------------------------------------------------------
+
+using Azure;
+using Azure.Data.Tables;
+using LINQPad;
+using LINQPad.Extensibility.DataContext;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Reflection;
+using System.Threading.Tasks;
+
 namespace Madd0.AzureStorageDriver
 {
-#if NETCORE
-    using Microsoft.Azure.Cosmos.Table;
-#else
-    using Microsoft.Azure.CosmosDB.Table;
-#endif
-
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Net;
-    using System.Reflection;
-    using System.Threading.Tasks;
-    using LINQPad.Extensibility.DataContext;
-    using Madd0.AzureStorageDriver.Properties;
-
-
     /// <summary>
     /// Provides the methods necessary to determining the storage account's schema and to building
     /// the typed data context .
@@ -31,7 +27,10 @@ namespace Madd0.AzureStorageDriver
     internal static class SchemaBuilder
     {
         // Names of columns that should be marked as table keys.
-        private static readonly List<string> KeyColumns = new List<string> { "PartitionKey", "RowKey" };
+        private static readonly List<string> KeyColumns = new List<string>
+        {
+            "PartitionKey", "RowKey"
+        };
 
         /// <summary>
         /// Gets the schema and builds the assembly.
@@ -50,7 +49,7 @@ namespace Madd0.AzureStorageDriver
             var code = GenerateCode(typeName, @namepace, model);
 
             // And compile the code into the assembly
-            BuildAssembly(name, code);
+            BuildAssembly(name, code, properties.ConnectionInfo);
 
             // Generate the schema for LINQPad
             List<ExplorerItem> schema = GetSchema(model);
@@ -71,14 +70,14 @@ namespace Madd0.AzureStorageDriver
             // cals to azure table storage
             ServicePointManager.DefaultConnectionLimit = properties.ModelLoadMaxParallelism;
 
-            var tableClient = properties.GetStorageAccount().CreateCloudTableClient();
-            
+            var tableClient = properties.GetStorageAccount();
+
             // First get a list of all tables
-            var model = (from tableName in tableClient.ListTables()
-                         select new CloudTable
-                         {
-                             Name = tableName.Name
-                         }).ToList();
+            var model = (from tableName in tableClient.Query()
+                select new CloudTable
+                {
+                    Name = tableName.Name
+                }).ToList();
 
             var options = new ParallelOptions()
             {
@@ -87,28 +86,21 @@ namespace Madd0.AzureStorageDriver
 
             Parallel.ForEach(model, options, table =>
             {
-                var threadTableClient = properties.GetStorageAccount().CreateCloudTableClient();
+                var threadTableClient = properties.GetStorageAccount().GetTableClient(table.Name);
 
-                var tableColumns = threadTableClient.GetTableReference(table.Name).ExecuteQuery(new TableQuery().Take(properties.NumberOfRows))
-                    .SelectMany(row => row.Properties)
-                    .GroupBy(column => column.Key)
-                    .Select(grp => new TableColumn
+                var tableColumns = threadTableClient.Query<TableEntity>()
+                    .Take(properties.NumberOfRows)
+                    .SelectMany(x => x)
+                    .GroupBy(x => x.Key)
+                    .Where(x => !"odata.etag".Equals(x.Key))
+                    .Select(x => new TableColumn
                     {
-                        Name = grp.Key,
-                        TypeName = GetType(grp.First().Value.PropertyType)
+                        Name = x.Key, TypeName = x.First().Value.GetType().FullName
                     });
 
-                var baseColumns = new List<TableColumn>
-                {
-                    new TableColumn { Name = "PartitionKey", TypeName = GetType(EdmType.String) },
-                    new TableColumn { Name = "RowKey", TypeName = GetType(EdmType.String) },
-                    new TableColumn { Name = "Timestamp", TypeName = GetType(EdmType.DateTime) },
-                    new TableColumn { Name = "ETag", TypeName = GetType(EdmType.String) }
-                };
-
-                table.Columns = tableColumns.Concat(baseColumns).ToArray();
+                table.Columns = tableColumns.ToArray();
             });
-            
+
             return model;
         }
 
@@ -124,9 +116,7 @@ namespace Madd0.AzureStorageDriver
             // We use a T4-generated class as the template
             var codeGenerator = new DataContextTemplate
             {
-                Namespace = @namespace,
-                TypeName = typeName,
-                Tables = model
+                Namespace = @namespace, TypeName = typeName, Tables = model
             };
 
             // As a workaround for compiling issues when referencing the driver DLL itself to
@@ -135,7 +125,7 @@ namespace Madd0.AzureStorageDriver
             var baseClass = ReadEmbeddedBaseClassCode();
 
             var sourceCode = baseClass + codeGenerator.TransformText();
-            LINQPad.Util.Break();
+            Util.Break();
 
             return sourceCode;
         }
@@ -146,7 +136,7 @@ namespace Madd0.AzureStorageDriver
             var resourceName = "Madd0.AzureStorageDriver.ExtendedTableQuery.cs";
 
             using var reader = new StreamReader(assembly.GetManifestResourceStream(resourceName));
-
+        
             return reader.ReadToEnd();
         }
 
@@ -155,24 +145,17 @@ namespace Madd0.AzureStorageDriver
         /// </summary>
         /// <param name="name">The <see cref="AssemblyName"/> instace of the assembly being created.</param>
         /// <param name="code">The code of the typed data context.</param>
-        private static void BuildAssembly(AssemblyName name, string code)
+        private static void BuildAssembly(AssemblyName name, string code, IConnectionInfo connectionInfo)
         {
             ICompiler compiler;
 
-            var dependencies = new List<string>
-            {
-                typeof(TableQuery).Assembly.Location
+            string[] dependencies = {
+                typeof(TableClient).Assembly.Location,
+                typeof(ETag).Assembly.Location
             };
-#if NETCORE
+
             compiler = new RoslynCompiler();
-#else
-            compiler = new CodeDomCompiler();
-            dependencies.Add("System.dll");
-            dependencies.Add("System.Core.dll");
-            dependencies.Add("System.Xml.dll");
-            dependencies.Add(typeof(Microsoft.Azure.Storage.OperationContext).Assembly.Location);
-#endif
-            compiler.Compile(code, name, dependencies);
+            compiler.Compile(connectionInfo, code, name, dependencies);
         }
 
         /// <summary>
@@ -184,46 +167,16 @@ namespace Madd0.AzureStorageDriver
         private static List<ExplorerItem> GetSchema(IEnumerable<CloudTable> model)
         {
             return (from table in model
-                    select new ExplorerItem(table.Name, ExplorerItemKind.QueryableObject, ExplorerIcon.Table)
-                    {
-                        Children = (from column in table.Columns
-                                    select new ExplorerItem(column.Name + " (" + column.TypeName + ")", ExplorerItemKind.Property, ExplorerIcon.Column)
-                                    {
-                                        Icon = KeyColumns.Contains(column.Name) ? ExplorerIcon.Key : ExplorerIcon.Column,
-                                        DragText = column.Name
-                                    }).ToList(),
-                        DragText = table.Name,
-                        IsEnumerable = true
-                    }).ToList();
-        }
-
-        /// <summary>
-        /// Gets the C# type equivalent of an entity data model (Edm) type.
-        /// </summary>
-        /// <param name="type">The Edm type.</param>
-        /// <returns>The C# type.</returns>
-        private static string GetType(EdmType type)
-        {
-            return type switch
-            {
-                EdmType.Binary => "byte[]",
-
-                EdmType.Boolean => "bool?",
-
-                EdmType.DateTime => "DateTime?",
-
-                EdmType.Double => "double?",
-
-                EdmType.Guid => "Guid?",
-
-                EdmType.Int32 => "int?",
-
-                EdmType.Int64 => "long?",
-
-                EdmType.String => "string",
-
-                _ => throw new NotSupportedException(string.Format(Exceptions.TypeNotSupported, type)),
-            };
+                select new ExplorerItem(table.Name, ExplorerItemKind.QueryableObject, ExplorerIcon.Table)
+                {
+                    Children = (from column in table.Columns
+                        select new ExplorerItem(column.Name + " (" + column.TypeName + ")", ExplorerItemKind.Property, ExplorerIcon.Column)
+                        {
+                            Icon = KeyColumns.Contains(column.Name) ? ExplorerIcon.Key : ExplorerIcon.Column, DragText = column.Name
+                        }).ToList(),
+                    DragText = table.Name,
+                    IsEnumerable = true
+                }).ToList();
         }
     }
 }
